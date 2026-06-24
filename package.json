@@ -1,0 +1,18 @@
+{
+  "name": "feature-flag-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tiny visual web app to demo feature flags (FeatureOps PoC) and practice CI/CD.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "lint": "eslint .",
+    "build": "esbuild src/main.js --bundle --minify --outfile=dist/bundle.js",
+    "dev": "esbuild src/main.js --bundle --outfile=dist/bundle.js --servedir=. --watch"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "esbuild": "^0.28.1",
+    "eslint": "^10.5.0"
+  }
+}
