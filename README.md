@@ -40,6 +40,38 @@ index.html, styles.css
 eslint.config.js, package.json
 ```
 
+## How it works (architecture)
+
+**Stack:** plain **JavaScript (ES modules)** + **HTML** + **CSS**. No framework.
+Tests run on **Node's built-in test runner**, build/bundle with **esbuild**,
+static analysis with **ESLint**.
+
+The key design choice is the **separation between flag logic and UI**:
+
+- `src/featureFlags.js` — **pure logic** (no DOM). Given a `flag` and a
+  `context`, it returns `true/false`. Because it's pure, it's trivial to unit
+  test and could run anywhere (browser, Node, a server) — exactly how a real
+  feature-flag SDK keeps evaluation independent from the UI.
+- `src/main.js` — **UI layer**. Reads the controls from the DOM, builds the
+  `flag` + `context`, calls `isEnabled()`, and paints the ON/OFF result.
+- `index.html` + `styles.css` — structure and styling.
+- `test/featureFlags.test.js` — tests target the pure logic only.
+
+Data flow:
+
+```mermaid
+flowchart LR
+  UI["index.html + styles.css"] --> Main["src/main.js (UI layer)"]
+  Main -->|"flag + context"| Logic["src/featureFlags.js (pure logic)"]
+  Logic -->|"true / false"| Main
+  Main -->|"render ON / OFF"| UI
+  Tests["test/featureFlags.test.js"] --> Logic
+```
+
+Why it matters: this mirrors how an SDK (like Unleash's) **separates flag
+evaluation from rendering** — which is what makes the logic fast, portable, and
+testable, and what lets a CI pipeline validate it with simple unit tests.
+
 ## Feature-flag concepts shown here
 
 - **on**: enabled for everyone.

@@ -7,14 +7,10 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header>
-      <h1>Feature Flag Demo</h1>
-      <p class="subtitle">A tiny visual playground for feature management (FeatureOps).</p>
-    </header>
-
-    <main class="layout">
-      <section class="panel">
-        <h2>Flag configuration</h2>
+    <div class="app">
+      <aside class="sidebar">
+        <h1>Feature Flag</h1>
+        <p class="subtitle">FeatureOps demo — one config, four users</p>
 
         <div class="row">
           <label for="enabled">Flag enabled</label>
@@ -31,34 +27,25 @@
         </div>
 
         <div class="row" id="rolloutRow" style="display: none">
-          <label for="percentage">Rollout %</label>
+          <label for="percentage">Rollout: <span id="percentageValue">50%</span></label>
           <input type="range" id="percentage" min="0" max="100" value="50" />
-          <span id="percentageValue">50%</span>
         </div>
 
         <div class="row" id="userIdsRow" style="display: none">
-          <label for="userIds">Allowed userIds</label>
-          <input type="text" id="userIds" placeholder="vip-1, vip-2" value="vip-1" />
+          <label for="userIds">Allowed userIds (comma-separated)</label>
+          <input type="text" id="userIds" placeholder="user-1, user-3" value="user-1" />
         </div>
 
         <hr />
+        <p class="hint">
+          Each screen on the right is a different user receiving the <strong>same
+          deployment</strong>. Change the flag here and watch the feature apply (or
+          not) to each user live — that's a gradual rollout.
+        </p>
+      </aside>
 
-        <div class="row">
-          <label for="userId">Current userId (context)</label>
-          <input type="text" id="userId" value="user-123" />
-        </div>
-        <p class="hint" id="bucket"></p>
-      </section>
-
-      <section class="panel result">
-        <div id="badge" class="badge on">FEATURE ON</div>
-        <div id="feature" class="feature on"></div>
-      </section>
-    </main>
-
-    <footer>
-      <p>Change the config and watch the feature flip in real time — same logic an Unleash SDK runs locally.</p>
-    </footer>
+      <main class="screens" id="screens"></main>
+    </div>
 
     <script type="module" src="./src/main.js"></script>
   </body>

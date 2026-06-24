@@ -13,11 +13,15 @@
  * @returns {number} bucket in [0, 99]
  */
 export function hashUserId(userId) {
-  let h = 0;
-  for (const ch of String(userId)) {
-    h = (h * 31 + ch.charCodeAt(0)) % 100000;
+  // FNV-1a 32-bit hash → good avalanche, so similar userIds land in very
+  // different buckets (same idea Unleash uses for consistent, well-spread rollouts).
+  const str = String(userId);
+  let h = 2166136261; // FNV offset basis
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619); // FNV prime
   }
-  return h % 100;
+  return (h >>> 0) % 100;
 }
 
 /**

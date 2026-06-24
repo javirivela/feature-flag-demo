@@ -1,67 +1,116 @@
 import { isEnabled, hashUserId } from './featureFlags.js';
 
-// --- UI wiring -------------------------------------------------------------
-// A tiny visual playground: change the flag config on the left and instantly
-// see whether the "New Checkout Experience" feature is ON or OFF on the right.
+// One shared flag configuration (the sidebar) applied to four independent
+// "screens", each representing a different user receiving the same deployment.
+//
+// Default users are chosen so their hash buckets are spread out, with one pair
+// (dave=71, eve=73) almost together — to show that what enables a feature is the
+// user's HASH BUCKET, not a proportional split of the group.
 
-const els = {
+const sidebar = {
   enabled: document.getElementById('enabled'),
   strategy: document.getElementById('strategy'),
   percentage: document.getElementById('percentage'),
   percentageValue: document.getElementById('percentageValue'),
-  userId: document.getElementById('userId'),
   userIds: document.getElementById('userIds'),
   rolloutRow: document.getElementById('rolloutRow'),
   userIdsRow: document.getElementById('userIdsRow'),
-  badge: document.getElementById('badge'),
-  feature: document.getElementById('feature'),
-  bucket: document.getElementById('bucket'),
 };
+
+const DEFAULT_USERS = ['victor', 'bob', 'dave', 'eve'];
+const screensEl = document.getElementById('screens');
+const screens = [];
 
 function currentFlag() {
   return {
-    enabled: els.enabled.checked,
-    strategy: els.strategy.value,
-    percentage: Number(els.percentage.value),
-    userIds: els.userIds.value
+    enabled: sidebar.enabled.checked,
+    strategy: sidebar.strategy.value,
+    percentage: Number(sidebar.percentage.value),
+    userIds: sidebar.userIds.value
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean),
   };
 }
 
-function render() {
-  const flag = currentFlag();
-  const context = { userId: els.userId.value.trim() };
+function buildScreens() {
+  DEFAULT_USERS.forEach((userId, i) => {
+    const screen = document.createElement('section');
+    screen.className = 'screen';
 
-  // Show/hide the controls that only apply to a given strategy.
-  els.rolloutRow.style.display = flag.strategy === 'gradualRollout' ? '' : 'none';
-  els.userIdsRow.style.display = flag.strategy === 'userIds' ? '' : 'none';
-  els.percentageValue.textContent = `${flag.percentage}%`;
+    const head = document.createElement('div');
+    head.className = 'screen-head';
+    const label = document.createElement('span');
+    label.className = 'screen-label';
+    label.textContent = `Screen ${i + 1}`;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'userId-input';
+    input.value = userId;
+    head.append(label, input);
 
-  const on = isEnabled(flag, context);
+    const badge = document.createElement('div');
+    const feature = document.createElement('div');
+    const bucket = document.createElement('p');
+    bucket.className = 'hint bucket';
 
-  els.badge.textContent = on ? 'FEATURE ON' : 'FEATURE OFF';
-  els.badge.className = `badge ${on ? 'on' : 'off'}`;
+    // Visual threshold bar: fill = rollout %, marker = this user's bucket.
+    const bar = document.createElement('div');
+    bar.className = 'rollout-bar';
+    const fill = document.createElement('div');
+    fill.className = 'rollout-fill';
+    const marker = document.createElement('div');
+    marker.className = 'rollout-marker';
+    bar.append(fill, marker);
 
-  els.feature.className = `feature ${on ? 'on' : 'off'}`;
-  els.feature.innerHTML = on
-    ? '<h2>New Checkout Experience</h2><p>One-click checkout enabled for this user.</p>'
-    : '<h2>Classic Checkout</h2><p>The new experience is hidden for this user.</p>';
+    screen.append(head, badge, feature, bucket, bar);
+    screensEl.appendChild(screen);
 
-  // Educational: show which rollout bucket this user falls into.
-  const bucket = context.userId ? hashUserId(context.userId) : null;
-  els.bucket.textContent =
-    bucket == null
-      ? 'No userId set'
-      : `userId "${context.userId}" → rollout bucket ${bucket}/99`;
+    input.addEventListener('input', render);
+    screens.push({ input, badge, feature, bucket, bar, fill, marker });
+  });
 }
 
-for (const el of Object.values(els)) {
-  if (el && el.addEventListener) {
-    el.addEventListener('input', render);
-    el.addEventListener('change', render);
+function render() {
+  const flag = currentFlag();
+
+  sidebar.rolloutRow.style.display = flag.strategy === 'gradualRollout' ? '' : 'none';
+  sidebar.userIdsRow.style.display = flag.strategy === 'userIds' ? '' : 'none';
+  sidebar.percentageValue.textContent = `${flag.percentage}%`;
+
+  for (const s of screens) {
+    const userId = s.input.value.trim();
+    const userBucket = userId ? hashUserId(userId) : null;
+    const on = isEnabled(flag, { userId });
+
+    s.badge.textContent = on ? 'FEATURE ON' : 'FEATURE OFF';
+    s.badge.className = `badge ${on ? 'on' : 'off'}`;
+
+    s.feature.className = `feature ${on ? 'on' : 'off'}`;
+    s.feature.innerHTML = on
+      ? '<h3>New Checkout</h3><p>One-click checkout enabled</p>'
+      : '<h3>Classic Checkout</h3><p>New experience hidden</p>';
+
+    s.bucket.textContent =
+      userBucket == null
+        ? 'No userId set'
+        : `userId "${userId}" → bucket ${userBucket}/99`;
+
+    // Show the threshold bar only for gradualRollout (it's about the % cutoff).
+    const showBar = flag.strategy === 'gradualRollout' && userBucket != null;
+    s.bar.style.display = showBar ? '' : 'none';
+    if (showBar) {
+      s.fill.style.width = `${flag.percentage}%`;
+      s.marker.style.left = `${userBucket}%`;
+      s.marker.classList.toggle('inside', userBucket < flag.percentage);
+    }
   }
 }
 
+for (const el of [sidebar.enabled, sidebar.strategy, sidebar.percentage, sidebar.userIds]) {
+  el.addEventListener('input', render);
+  el.addEventListener('change', render);
+}
+
+buildScreens();
 render();
