@@ -1,0 +1,27 @@
+# ---------------------------------------------------------------------------
+# CI workflow (skeleton).
+# A "workflow" = an automated process that GitHub runs for you.
+# GitHub only looks for workflows inside the ".github/workflows/" folder.
+# ---------------------------------------------------------------------------
+
+# Human-friendly name shown in the GitHub "Actions" tab.
+name: CI
+
+# WHEN should this run? These are the "triggers" (events).
+on:
+  push:
+    branches: [main] # every push to main
+  pull_request:
+    branches: [main] # every PR targeting main
+  workflow_dispatch: {} # also allow running it manually from the Actions tab
+
+# WHAT should run. A workflow has one or more "jobs".
+jobs:
+  ci:
+    # The "runner": a fresh virtual machine GitHub spins up for this job.
+    runs-on: ubuntu-latest
+
+    # A job is a list of "steps", run top to bottom on the same runner.
+    steps:
+      - name: Hello from CI
+        run: echo "Pipeline skeleton is alive — real steps (lint, test, build) come next."
